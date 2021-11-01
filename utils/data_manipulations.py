@@ -22,3 +22,11 @@ def shuffle_data(x, y, seed=None):
     np.random.shuffle(idx)  # 打乱
     return x[idx], y[idx]
 
+
+def normalize(x, axis=-1, order=2):
+    """ Normalize the dataset x """
+    l2 = np.linalg.norm(x, order, axis)
+    # modify 0 class to 1 class
+    l2[l2 == 0] = 1
+    return x / np.expand_dims(l2, axis)
+
