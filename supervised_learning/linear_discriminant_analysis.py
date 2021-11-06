@@ -1,68 +1,79 @@
 import numpy as np
+import matplotlib.pyplot as plt
 from sklearn import datasets
-from utils.data_manipulations import train_test_split
-from utils.data_operations import accuracy_score
-from utils.data_operations import calculate_covariance_matrix
 
 
-# https://www.geeksforgeeks.org/ml-linear-discriminant-analysis/
 class LDA:
-    """
-    dimension reduction
-    """
-    def __init__(self):
-        self.w = None
+    def __init__(self, n_components):
+        # 降维维度
+        self.n_components = n_components
+        self.linear_discriminants = None
 
-    def transform(self, X, y):
-        self.fit(X, y)
-        # Project data onto vector
-        X_transform = X.dot(self.w)
-        return X_transform
+    def fit(self, X, y):
+        n_features = X.shape[1]
+        class_labels = np.unique(y)
 
-    # binary classification:0 / 1
-    def fit(self, x_train, y_train):
-        # Separate data by class
-        x_0 = x_train[y_train == 0]
-        x_1 = x_train[y_train == 1]
+        # Within class scatter matrix:
+        # SW = sum((X_c - mean_X_c)^2 )
 
-        # Calculate the covariance matrices of the two datasets
-        cov1 = calculate_covariance_matrix(x_0)
-        cov2 = calculate_covariance_matrix(x_1)
-        cov_tot = cov1 + cov2
+        # Between class scatter:
+        # SB = sum( n_c * (mean_X_c - mean_overall)^2 )
 
-        # Calculate the mean of the two datasets
-        mean1 = x_0.mean(0)
-        mean2 = x_1.mean(0)
-        mean_diff = np.atleast_1d(mean1 - mean2)
+        mean_overall = np.mean(X, axis=0)
+        SW = np.zeros((n_features, n_features))
+        SB = np.zeros((n_features, n_features))
+        for c in class_labels:
+            # 根据类别获取对应的样本数据
+            X_c = X[y == c]
+            # 每个样本的维度均值
+            mean_c = np.mean(X_c, axis=0)
+            # (4, n_c) * (n_c, 4) = (4,4) -> transpose
+            SW += (X_c - mean_c).T.dot((X_c - mean_c))
 
-        # Determine the vector which when X is projected onto it best separates the
-        # data by class. w = (mean1 - mean2) / (cov1 + cov2)
-        self.w = np.linalg.pinv(cov_tot).dot(mean_diff)  # pseudo inverse of matrix
+            # (4, 1) * (1, 4) = (4,4) -> reshape
+            n_c = X_c.shape[0]
+            mean_diff = (mean_c - mean_overall).reshape(n_features, 1)
+            SB += n_c * (mean_diff).dot(mean_diff.T)
 
-    def predict(self, x_test):
-        y_pred = []
-        for sample in x_test:
-            h = sample.dot(self.w)
-            y = 1 * (h < 0)
-            y_pred.append(y)
-        return y_pred
+        # Determine SW^-1 * SB
+        A = np.linalg.inv(SW).dot(SB)
+        # Get eigenvalues and eigenvectors of SW^-1 * SB
+        eigenvalues, eigenvectors = np.linalg.eig(A)
+        # -> eigenvector v = [:,i] column vector, transpose for easier calculations
+        # sort eigenvalues high to low
+        eigenvectors = eigenvectors.T
+        idxs = np.argsort(abs(eigenvalues))[::-1]
+        eigenvalues = eigenvalues[idxs]
+        eigenvectors = eigenvectors[idxs]
+        # store first n eigenvectors
+        self.linear_discriminants = eigenvectors[0 : self.n_components]
+
+    def transform(self, X):
+        # project data
+        return np.dot(X, self.linear_discriminants.T)
 
 
-if __name__ == '__main__':
-    # 三个类别，0 1 2
+if __name__ == "__main__":
     data = datasets.load_iris()
     X = data["data"]
     y = data["target"]
 
-    # 删除类别为2的数据，标签为0/1，binary classification
-    X = X[y != 2]
-    y = y[y != 2]
+    # Project the data onto the 2 primary linear discriminants
+    lda = LDA(2)
+    lda.fit(X, y)
+    # dimension reduction
+    X_projected = lda.transform(X)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33)
+    print("Shape of X:", X.shape)
+    print("Shape of transformed X:", X_projected.shape)
 
-    lda = LDA()
-    lda.fit(X_train, y_train)
-    y_pred = lda.predict(X_test)
+    x1, x2 = X_projected[:, 0], X_projected[:, 1]
 
-    accuracy = accuracy_score(y_test, y_pred)
-    print("Accuracy:", accuracy)
+    fig = plt.figure()
+    cmap = plt.get_cmap("viridis")
+    plt.scatter(x1, x2, c=y, edgecolor="none", alpha=0.8, cmap=cmap)
+
+    plt.xlabel("Linear Discriminant 1")
+    plt.ylabel("Linear Discriminant 2")
+    plt.colorbar()
+    plt.show()
