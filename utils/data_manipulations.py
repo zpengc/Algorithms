@@ -24,11 +24,12 @@ def shuffle_data(x, y, seed=None):
 
 
 def normalize(x, axis=-1, order=2):
-    """ Normalize the dataset x """
+    """ Normalize x data in dataset """
+    # order=2表示取2-norm范数，axis=-1表示不返回一个值，返回一个1-d数组
     l2 = np.linalg.norm(x, order, axis)
-    # modify 0 class to 1 class
-    l2[l2 == 0] = 1
-    return x / np.expand_dims(l2, axis)
+    # modify 0 real number to 1 real number
+    l2[l2 == 0] = 1  # l2存储每个样本数据的2-norm值
+    return x / np.expand_dims(l2, axis)  # broadcast, 自动插入一个维度
 
 
 # https://stackoverflow.com/questions/29831489/convert-array-of-indices-to-1-hot-encoded-numpy-array
@@ -45,3 +46,13 @@ def to_categorical(y, dimensions=None):
     return one_hot
 
 
+# np.diag函数实现相同功能
+# https://stackoverflow.com/questions/28598572/how-to-convert-a-column-or-row-matrix-to-a-diagonal-matrix-in-python
+def make_diagonal(vector):
+    """ Converts a vector into an diagonal matrix """
+    dimension = len(vector)
+    matrix = np.zeros((dimension, dimension))
+    for i in range(len(matrix[0])):
+        # 对角线元素依次是vector的元素值
+        matrix[i, i] = vector[i]
+    return matrix
