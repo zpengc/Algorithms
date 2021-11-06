@@ -16,3 +16,14 @@ def accuracy_score(y_test, y_pred):
     accuracy = np.sum(y_test == y_pred, axis=0) / len(y_test)  # axis = 0 表示first axis，在不同的维度数组中有不同的情况
     return accuracy
 
+
+def calculate_covariance_matrix(x, y=None):
+    """ Calculate the covariance matrix for data X """
+    if y is None:
+        y = x
+    n_samples, n_features = np.shape(x)
+    # 方阵，此处取平均值相当于数学期望，E( [X-E(X)]^2 )
+    covariance_matrix = (1 / (n_samples-1)) * (x - x.mean(axis=0)).T.dot(y - y.mean(axis=0))
+
+    return np.array(covariance_matrix, dtype=float)
+
