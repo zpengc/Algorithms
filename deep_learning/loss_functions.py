@@ -25,9 +25,15 @@ class SquareLoss(Loss):
 
 
 class CrossEntropy(Loss):
+    """
+    Cross-entropy loss, or log loss.
+    A perfect model would have a log loss of 0.
+    """
     def __init__(self):
         pass
 
+    # in binary classification, when y_true is 1, the loss is - y_true * np.log(p)
+    # when y_true is 0, the loss is - y_true * np.log(1-p)
     def loss(self, y_true, y_pred):
         # Avoid division by zero
         # Clip (limit) the values in an array
