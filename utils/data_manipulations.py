@@ -30,3 +30,18 @@ def normalize(x, axis=-1, order=2):
     l2[l2 == 0] = 1
     return x / np.expand_dims(l2, axis)
 
+
+# https://stackoverflow.com/questions/29831489/convert-array-of-indices-to-1-hot-encoded-numpy-array
+# see source code for keras
+# https://github.com/keras-team/keras/blob/2d183db0372e5ac2a686608cb9da0a9bd4319764/keras/utils/np_utils.py#L9
+def to_categorical(y, dimensions=None):
+    """ One-hot encoding of label values """
+    if not dimensions:
+        # y标签里面最大值，因为y标签从0开始，所有加上1
+        dimensions = np.amax(y) + 1
+    one_hot = np.zeros((y.shape[0], dimensions))
+    # np.arange(y.shape[0])元素依次表示行，y元素依次表示列
+    one_hot[np.arange(y.shape[0]), y] = 1
+    return one_hot
+
+
